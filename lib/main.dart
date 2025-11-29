@@ -28,6 +28,72 @@ class MySimpleNotes extends StatefulWidget {
 }
 
 class _MySimpleNotesState extends State<MySimpleNotes> {
+  final TextEditingController _titleController = TextEditingController();
+  final TextEditingController _contentController = TextEditingController();
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _contentController.dispose();
+    super.dispose();
+  }
+
+  // Fungsi untuk memunculkan Form
+  void _showForm() {
+    // Bersihkan input field setiap kali form dibuka
+    _titleController.clear();
+    _contentController.clear();
+    showModalBottomSheet(
+      context: context,
+      elevation: 5,
+      // Agar form bisa full screen saat keyboard muncul
+      isScrollControlled: true,
+      builder: (_) => Container(
+        padding: EdgeInsets.only(
+          top: 15,
+          left: 15,
+          right: 15,
+          // Padding bawah mengikuti tinggi keyboard agar form tidak tertutup
+          bottom: MediaQuery.of(context).viewInsets.bottom + 120,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            TextField(
+              controller: _titleController,
+              decoration: InputDecoration(hintText: 'Judul Catatan'),
+            ),
+            SizedBox(height: 10),
+            TextField(
+              controller: _contentController,
+              decoration: InputDecoration(hintText: 'Isi Catatan'),
+              maxLines: 3, // Agar area ketik lebih luas
+            ),
+            SizedBox(height: 20),
+            ElevatedButton(
+              onPressed: () async {
+                // 1. Ambil teks dari controller
+                String title = _titleController.text;
+                String content = _contentController.text;
+                if (title.isNotEmpty && content.isNotEmpty) {
+                  // 2. Simpan ke Database
+                  await DatabaseHelper.instance.create(
+                    Note(title: title, content: content),
+                  );
+                  // 3. Tutup Form & Refresh UI
+                  Navigator.of(context).pop();
+                  setState(() {});
+                }
+              },
+              child: Text('Simpan Catatan'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -60,18 +126,33 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
         },
       ), //FutureBuilder
       ////////////
-      floatingActionButton: FloatingActionButton(
-        child: Icon(Icons.add),
-        onPressed: () async {
-          await DatabaseHelper.instance.create(
-            Note(
-              title: 'Catatan Baru',
-              content: 'Isi catatan otomatis pada ${DateTime.now()}',
+      floatingActionButtonLocation: FloatingActionButtonLocation.centerFloat,
+      floatingActionButton: Padding(
+        padding: EdgeInsets.only(left: 16.0, right: 16.0, bottom: 8.0),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            FloatingActionButton(
+              child: Icon(Icons.add),
+              onPressed: () {
+                _showForm();
+              },
             ),
-          );
-          setState(() {}); // Refresh UI
-        },
-      ), // FloatingActionButton
+            FloatingActionButton(
+              child: Icon(Icons.sd_card),
+              onPressed: () async {
+                await DatabaseHelper.instance.create(
+                  Note(
+                    title: 'Catatan Baru',
+                    content: 'Isi catatan otomatis pada ${DateTime.now()}',
+                  ),
+                );
+                setState(() {}); // Refresh UI
+              },
+            ),
+          ],
+        ),
+      ),
       ////////////
     ); // Scaffold
   }
