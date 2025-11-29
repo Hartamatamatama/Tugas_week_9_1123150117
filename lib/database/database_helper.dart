@@ -16,7 +16,8 @@ class DatabaseHelper {
   Future<Database> _initDB(String filePath) async {
     final dbPath = await getDatabasesPath();
     final path = join(dbPath, filePath);
-    return await openDatabase(path, version: 1, onCreate: _createDB);
+    // Bump version to 2 to add `subtitle` column for existing databases
+    return await openDatabase(path, version: 2, onCreate: _createDB, onUpgrade: _onUpgrade);
   }
 
   Future _createDB(Database db, int version) async {
@@ -24,9 +25,21 @@ class DatabaseHelper {
 CREATE TABLE notes (
 id INTEGER PRIMARY KEY AUTOINCREMENT,
 title TEXT,
+subtitle TEXT,
 content TEXT
 )
 ''');
+  }
+
+  // Handle upgrades from older DB versions (add subtitle column)
+  Future<void> _onUpgrade(Database db, int oldVersion, int newVersion) async {
+    if (oldVersion < 2) {
+      try {
+        await db.execute('ALTER TABLE notes ADD COLUMN subtitle TEXT');
+      } catch (e) {
+        // ignore errors (column may already exist on some devices)
+      }
+    }
   }
 
   Future<int> create(Note note) async {

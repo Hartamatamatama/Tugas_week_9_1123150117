@@ -30,11 +30,13 @@ class MySimpleNotes extends StatefulWidget {
 class _MySimpleNotesState extends State<MySimpleNotes> {
   final TextEditingController _titleController = TextEditingController();
   final TextEditingController _contentController = TextEditingController();
+  final TextEditingController _subtitleController = TextEditingController();
 
   @override
   void dispose() {
     _titleController.dispose();
     _contentController.dispose();
+    _subtitleController.dispose();
     super.dispose();
   }
 
@@ -42,6 +44,7 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
   void _showForm() {
     // Bersihkan input field setiap kali form dibuka
     _titleController.clear();
+    _subtitleController.clear();
     _contentController.clear();
     showModalBottomSheet(
       context: context,
@@ -66,6 +69,11 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
             ),
             SizedBox(height: 10),
             TextField(
+              controller: _subtitleController,
+              decoration: InputDecoration(hintText: 'Sub Judul Catatan'),
+            ),
+            SizedBox(height: 10),
+            TextField(
               controller: _contentController,
               decoration: InputDecoration(hintText: 'Isi Catatan'),
               maxLines: 3, // Agar area ketik lebih luas
@@ -76,10 +84,11 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
                 // 1. Ambil teks dari controller
                 String title = _titleController.text;
                 String content = _contentController.text;
+                String subtitle = _subtitleController.text;
                 if (title.isNotEmpty && content.isNotEmpty) {
                   // 2. Simpan ke Database
                   await DatabaseHelper.instance.create(
-                    Note(title: title, content: content),
+                    Note(title: title, subtitle: subtitle, content: content),
                   );
                   // 3. Tutup Form & Refresh UI
                   Navigator.of(context).pop();
@@ -110,8 +119,20 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
               Note note = snapshot.data![index];
               return Card(
                 child: ListTile(
+                  isThreeLine: true,
                   title: Text(note.title),
-                  subtitle: Text(note.content),
+                  subtitle: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (note.subtitle.isNotEmpty)
+                        Text(
+                          note.subtitle,
+                          style: TextStyle(fontWeight: FontWeight.w600),
+                        ),
+                      Text(note.content),
+                    ],
+                  ),
                   trailing: IconButton(
                     icon: Icon(Icons.delete, color: Colors.red),
                     onPressed: () async {
@@ -144,6 +165,7 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
                 await DatabaseHelper.instance.create(
                   Note(
                     title: 'Catatan Baru',
+                    subtitle: 'Subjudul Catatan Baru',
                     content: 'Isi catatan otomatis pada ${DateTime.now()}',
                   ),
                 );
