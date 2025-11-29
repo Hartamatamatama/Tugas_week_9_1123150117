@@ -35,8 +35,9 @@ class _MySimpleNotesState extends State<MySimpleNotes> {
       body: FutureBuilder<List<Note>>(
         future: DatabaseHelper.instance.readAllNotes(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData)
+          if (!snapshot.hasData) {
             return Center(child: CircularProgressIndicator());
+          }
           return ListView.builder(
             itemCount: snapshot.data!.length,
             itemBuilder: (context, index) {
